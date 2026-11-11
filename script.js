@@ -15,6 +15,39 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const createMotionChannel = (initialValues, apply, onSettle) => {
+  const values = { ...initialValues };
+  const targets = { ...initialValues };
+  let frame = 0;
+  let lastTime = 0;
+
+  const tick = (time) => {
+    const elapsed = lastTime ? Math.min(time - lastTime, 34) : 16.7;
+    const blend = 1 - Math.exp(-elapsed / 72);
+    let moving = false;
+    lastTime = time;
+
+    Object.keys(values).forEach((key) => {
+      const distance = targets[key] - values[key];
+      values[key] += distance * blend;
+      if (Math.abs(distance) > 0.01) moving = true;
+      else values[key] = targets[key];
+    });
+
+    apply(values);
+    if (moving) frame = window.requestAnimationFrame(tick);
+    else {
+      frame = 0;
+      lastTime = 0;
+      onSettle?.(values, targets);
+    }
+  };
+
+  return (nextTargets) => {
+    Object.assign(targets, nextTargets);
+    if (!frame) frame = window.requestAnimationFrame(tick);
+  };
+};
 let ticking = false;
 let lastScrollY = window.scrollY;
 let dockTimer;
@@ -78,35 +111,50 @@ const onScroll = () => {
 };
 
 if (!reducedMotion && precisePointer) {
+  let heroResting = false;
+  const moveHero = createMotionChannel({ x: 0, y: 0 }, ({ x, y }) => {
+    hero?.style.setProperty('--hero-x', `${x.toFixed(2)}px`);
+    hero?.style.setProperty('--hero-y', `${y.toFixed(2)}px`);
+  }, () => {
+    if (heroResting) hero?.classList.remove('motion-active');
+  });
+
   hero?.addEventListener('pointermove', (event) => {
     const rect = hero.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width - 0.5;
     const y = (event.clientY - rect.top) / rect.height - 0.5;
-    hero.style.setProperty('--hero-x', `${x * 18}px`);
-    hero.style.setProperty('--hero-y', `${y * 14}px`);
+    heroResting = false;
+    hero.classList.add('motion-active');
+    moveHero({ x: x * 18, y: y * 14 });
   }, { passive: true });
 
   hero?.addEventListener('pointerleave', () => {
-    hero.style.setProperty('--hero-x', '0px');
-    hero.style.setProperty('--hero-y', '0px');
+    heroResting = true;
+    moveHero({ x: 0, y: 0 });
   });
 
   productStories.forEach((story) => {
+    let storyResting = false;
+    const moveStory = createMotionChannel({ tiltX: 0, tiltY: 0, lift: 0 }, ({ tiltX, tiltY, lift }) => {
+      story.style.setProperty('--tilt-x', `${tiltX.toFixed(3)}deg`);
+      story.style.setProperty('--tilt-y', `${tiltY.toFixed(3)}deg`);
+      story.style.setProperty('--lift', `${lift.toFixed(2)}px`);
+    }, () => {
+      if (storyResting) story.classList.remove('is-tilting');
+    });
+
     story.addEventListener('pointermove', (event) => {
       const rect = story.getBoundingClientRect();
       const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
       const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
-      story.style.setProperty('--tilt-x', `${(0.5 - y) * 4}deg`);
-      story.style.setProperty('--tilt-y', `${(x - 0.5) * 5}deg`);
-      story.style.setProperty('--lift', '-5px');
+      storyResting = false;
       story.classList.add('is-tilting');
+      moveStory({ tiltX: (0.5 - y) * 4, tiltY: (x - 0.5) * 5, lift: -5 });
     }, { passive: true });
 
     story.addEventListener('pointerleave', () => {
-      story.classList.remove('is-tilting');
-      story.style.setProperty('--tilt-x', '0deg');
-      story.style.setProperty('--tilt-y', '0deg');
-      story.style.setProperty('--lift', '0px');
+      storyResting = true;
+      moveStory({ tiltX: 0, tiltY: 0, lift: 0 });
     });
   });
 }
