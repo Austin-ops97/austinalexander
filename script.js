@@ -96,8 +96,6 @@ if (!reducedMotion && precisePointer) {
       const rect = story.getBoundingClientRect();
       const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
       const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
-      story.style.setProperty('--mx', `${x * 100}%`);
-      story.style.setProperty('--my', `${y * 100}%`);
       story.style.setProperty('--tilt-x', `${(0.5 - y) * 4}deg`);
       story.style.setProperty('--tilt-y', `${(x - 0.5) * 5}deg`);
       story.style.setProperty('--lift', '-5px');
