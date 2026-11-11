@@ -5,24 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050607">
   <meta name="description" content="Austin Alexander builds operational systems for power generation, from control-room workflows to native software and AI-enabled tools.">
-  <meta property="og:title" content="Austin Alexander — Operations Systems & Software">
+  <meta property="og:title" content="Austin Alexander — Operations Systems &amp; Software">
   <meta property="og:description" content="Power generation operations, remote operations center delivery, and software built from firsthand operating experience.">
-  <title>Austin Alexander — Operations Systems & Software</title>
+  <meta property="og:type" content="profile">
+  <title>Austin Alexander — Operations Systems &amp; Software</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script defer src="script.js"></script>
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"Person","name":"Austin L. Alexander","jobTitle":"Operations Systems Professional","email":"mailto:1997austinalexander@gmail.com","telephone":"+1-409-594-2170","url":"https://austinalexander.vercel.app","sameAs":["https://www.linkedin.com/in/austin-alexander-8a93a338b"],"knowsAbout":["Power generation operations","Remote operations centers","Software development","SwiftUI","Web applications"]}
+  </script>
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true"><span data-scroll-progress></span></div>
   <header class="site-header" data-header>
     <a class="wordmark" href="#top" aria-label="Austin Alexander home"><span>AA</span></a>
+    <span class="chapter-status" data-chapter aria-live="polite">Profile</span>
     <nav aria-label="Primary navigation">
-      <a href="#work">Experience</a>
-      <a href="#products">Products</a>
-      <a href="#capabilities">Capabilities</a>
+      <a href="#work" data-nav="work">Experience</a>
+      <a href="#products" data-nav="products">Products</a>
+      <a href="#capabilities" data-nav="capabilities">Capabilities</a>
     </nav>
     <a class="header-cta" href="#contact">Connect <span aria-hidden="true">↗</span></a>
   </header>
+
+  <nav class="mobile-dock" data-mobile-dock aria-label="Quick contact">
+    <a href="mailto:1997austinalexander@gmail.com"><span aria-hidden="true">↗</span>Email</a>
+    <a href="tel:+14095942170"><span aria-hidden="true">⌕</span>Call</a>
+    <a href="sms:+14095942170"><span aria-hidden="true">…</span>Text</a>
+    <a href="https://www.linkedin.com/in/austin-alexander-8a93a338b" target="_blank" rel="noreferrer"><span aria-hidden="true">in</span>LinkedIn</a>
+    <button type="button" data-print><span aria-hidden="true">↓</span>Résumé</button>
+  </nav>
 
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
@@ -38,6 +51,7 @@
         <div class="hero-actions">
           <a class="button primary" href="#work">View experience <span>↓</span></a>
           <a class="button secondary" href="#contact">Contact me <span>↗</span></a>
+          <button class="button secondary print-button" type="button" data-print>Save résumé <span>⇩</span></button>
         </div>
       </div>
       <div class="hero-metrics reveal" aria-label="Résumé summary">
@@ -110,6 +124,17 @@
       </div>
     </section>
 
+    <section class="manifesto" aria-labelledby="manifesto-title">
+      <div class="manifesto-grid" aria-hidden="true"></div>
+      <div class="manifesto-orbit" aria-hidden="true"><span></span></div>
+      <div class="manifesto-copy reveal">
+        <p class="section-kicker">From operations to engineering</p>
+        <h2 id="manifesto-title"><span>I operate complex systems.</span><br>I build better ones.</h2>
+        <p>Everything below was independently conceived, designed, and developed from firsthand operating experience.</p>
+      </div>
+      <div class="manifesto-axis" aria-hidden="true"><span>OPERATE</span><i></i><span>BUILD</span></div>
+    </section>
+
     <section class="products" id="products" aria-labelledby="products-title">
       <div class="product-intro section reveal">
         <p class="section-kicker">03 / Independent work</p>
@@ -125,7 +150,7 @@
           <ul><li>My role · Solo product designer and developer</li><li>Format · Widescreen web dashboard</li><li>Focus · Fleet and unit outage visibility</li></ul>
         </div>
         <div class="project-visual landscape-visual reveal">
-          <figure class="screenshot-panel"><img src="assets/products/01-outage-dashboard-screen.png" alt="An anonymized outage command dashboard showing unit statuses and return estimates"></figure>
+          <figure class="screenshot-panel"><img src="assets/products/01-outage-dashboard-screen.png" alt="An anonymized outage command dashboard showing unit statuses and return estimates" loading="lazy" decoding="async"></figure>
         </div>
       </article>
 
@@ -137,7 +162,7 @@
           <ul><li>My role · Solo product designer and developer</li><li>Format · Control-room display</li><li>Focus · Live multi-plant awareness</li></ul>
         </div>
         <div class="project-visual landscape-visual reveal">
-          <figure class="screenshot-panel"><img src="assets/products/02-generation-dashboard.png" alt="An anonymized generation dashboard with plant and unit status data"></figure>
+          <figure class="screenshot-panel"><img src="assets/products/02-generation-dashboard.png" alt="An anonymized generation dashboard with plant and unit status data" loading="lazy" decoding="async"></figure>
         </div>
       </article>
 
@@ -149,8 +174,8 @@
           <ul><li>My role · Solo product designer and developer</li><li>Format · Responsive web application</li><li>Focus · Workbook-backed portfolio analysis</li></ul>
         </div>
         <div class="project-visual dual-landscape reveal">
-          <figure class="screenshot-panel light-shot"><img src="assets/products/03-portfolio-light.png" alt="Light portfolio dashboard"></figure>
-          <figure class="screenshot-panel dark-shot"><img src="assets/products/04-portfolio-dark.png" alt="Dark portfolio dashboard"></figure>
+          <figure class="screenshot-panel light-shot"><img src="assets/products/03-portfolio-light.png" alt="Light portfolio dashboard" loading="lazy" decoding="async"></figure>
+          <figure class="screenshot-panel dark-shot"><img src="assets/products/04-portfolio-dark.png" alt="Dark portfolio dashboard" loading="lazy" decoding="async"></figure>
         </div>
       </article>
 
@@ -162,7 +187,7 @@
           <ul><li>My role · Solo product designer and developer</li><li>Format · Responsive enterprise web app</li><li>Focus · Search and operational workflows</li></ul>
         </div>
         <div class="project-visual portrait-visual reveal">
-          <figure class="screenshot-panel portrait-shot"><img src="assets/products/05-relay-search.png" alt="Relay enterprise search interface"></figure>
+          <figure class="screenshot-panel portrait-shot"><img src="assets/products/05-relay-search.png" alt="Relay enterprise search interface" loading="lazy" decoding="async"></figure>
         </div>
       </article>
 
@@ -174,8 +199,8 @@
           <ul><li>My role · Solo iOS product designer and developer</li><li>Format · Native iOS application</li><li>Focus · Guided multi-unit event capture</li></ul>
         </div>
         <div class="project-visual portrait-pair reveal">
-          <figure class="screenshot-panel portrait-shot"><img src="assets/products/07-operational-logger.png" alt="Operational Logger asset selection interface"></figure>
-          <figure class="screenshot-panel portrait-shot"><img src="assets/products/06-active-session.png" alt="Active Session guided unit logging interface"></figure>
+          <figure class="screenshot-panel portrait-shot"><img src="assets/products/07-operational-logger.png" alt="Operational Logger asset selection interface" loading="lazy" decoding="async"></figure>
+          <figure class="screenshot-panel portrait-shot"><img src="assets/products/06-active-session.png" alt="Active Session guided unit logging interface" loading="lazy" decoding="async"></figure>
         </div>
       </article>
 
@@ -187,7 +212,7 @@
           <ul><li>My role · Solo product designer and developer</li><li>Format · Native iPad application</li><li>Focus · Personal and operational assistance</li></ul>
         </div>
         <div class="project-visual portrait-visual reveal">
-          <figure class="screenshot-panel portrait-shot"><img src="assets/products/08-cailyn-overview.png" alt="Cailyn operations assistant overview"></figure>
+          <figure class="screenshot-panel portrait-shot"><img src="assets/products/08-cailyn-overview.png" alt="Cailyn operations assistant overview" loading="lazy" decoding="async"></figure>
         </div>
       </article>
     </section>
