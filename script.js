@@ -27,7 +27,7 @@ const updateParallax = () => {
     const rect = visual.getBoundingClientRect();
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
     const visualCenter = rect.top + rect.height / 2;
-    const offset = clamp((viewportCenter - visualCenter) * 0.035, -22, 22);
+    const offset = Math.round(clamp((viewportCenter - visualCenter) * 0.035, -22, 22));
     visual.style.setProperty('--parallax', `${offset}px`);
   });
 };
@@ -84,15 +84,11 @@ if (!reducedMotion && precisePointer) {
     const y = (event.clientY - rect.top) / rect.height - 0.5;
     hero.style.setProperty('--hero-x', `${x * 18}px`);
     hero.style.setProperty('--hero-y', `${y * 14}px`);
-    hero.style.setProperty('--hero-copy-x', `${x * -3.4}px`);
-    hero.style.setProperty('--hero-copy-y', `${y * -2.6}px`);
   }, { passive: true });
 
   hero?.addEventListener('pointerleave', () => {
     hero.style.setProperty('--hero-x', '0px');
     hero.style.setProperty('--hero-y', '0px');
-    hero.style.setProperty('--hero-copy-x', '0px');
-    hero.style.setProperty('--hero-copy-y', '0px');
   });
 
   productStories.forEach((story) => {
@@ -105,9 +101,11 @@ if (!reducedMotion && precisePointer) {
       story.style.setProperty('--tilt-x', `${(0.5 - y) * 4}deg`);
       story.style.setProperty('--tilt-y', `${(x - 0.5) * 5}deg`);
       story.style.setProperty('--lift', '-5px');
+      story.classList.add('is-tilting');
     }, { passive: true });
 
     story.addEventListener('pointerleave', () => {
+      story.classList.remove('is-tilting');
       story.style.setProperty('--tilt-x', '0deg');
       story.style.setProperty('--tilt-y', '0deg');
       story.style.setProperty('--lift', '0px');
