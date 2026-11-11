@@ -1,6 +1,8 @@
 const header = document.querySelector('[data-header]');
+const progressBar = document.querySelector('[data-scroll-progress]');
 const reveals = document.querySelectorAll('.reveal');
 const parallaxVisuals = document.querySelectorAll('.project-visual');
+const productStories = document.querySelectorAll('.product-story');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let ticking = false;
 
@@ -18,6 +20,9 @@ const updateParallax = () => {
 
 const onScroll = () => {
   header.classList.toggle('scrolled', window.scrollY > 20);
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+  progressBar.style.transform = `scaleX(${Math.max(0, Math.min(1, progress))})`;
   if (!ticking) {
     requestAnimationFrame(() => {
       updateParallax();
@@ -26,6 +31,14 @@ const onScroll = () => {
     ticking = true;
   }
 };
+
+productStories.forEach((story) => {
+  story.addEventListener('pointermove', (event) => {
+    const rect = story.getBoundingClientRect();
+    story.style.setProperty('--mx', `${((event.clientX - rect.left) / rect.width) * 100}%`);
+    story.style.setProperty('--my', `${((event.clientY - rect.top) / rect.height) * 100}%`);
+  }, { passive: true });
+});
 
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
