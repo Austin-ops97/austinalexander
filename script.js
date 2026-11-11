@@ -1,5 +1,6 @@
 const header = document.querySelector('[data-header]');
 const progressBar = document.querySelector('[data-scroll-progress]');
+const cursorRing = document.querySelector('[data-cursor]');
 const mobileDock = document.querySelector('[data-mobile-dock]');
 const chapterStatus = document.querySelector('[data-chapter]');
 const hero = document.querySelector('.hero');
@@ -15,7 +16,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-const createMotionChannel = (initialValues, apply, onSettle) => {
+const createMotionChannel = (initialValues, apply, onSettle, response = 72) => {
   const values = { ...initialValues };
   const targets = { ...initialValues };
   let frame = 0;
@@ -23,7 +24,7 @@ const createMotionChannel = (initialValues, apply, onSettle) => {
 
   const tick = (time) => {
     const elapsed = lastTime ? Math.min(time - lastTime, 34) : 16.7;
-    const blend = 1 - Math.exp(-elapsed / 72);
+    const blend = 1 - Math.exp(-elapsed / response);
     let moving = false;
     lastTime = time;
 
@@ -51,6 +52,36 @@ const createMotionChannel = (initialValues, apply, onSettle) => {
 let ticking = false;
 let lastScrollY = window.scrollY;
 let dockTimer;
+
+if (!reducedMotion && precisePointer && cursorRing) {
+  const interactiveSelector = 'a,button,input,textarea,select,label,summary,[role="button"],[tabindex]';
+  let moveCursor;
+
+  const applyCursorPosition = ({ x, y }) => {
+    cursorRing.style.setProperty('--cursor-x', `${x.toFixed(2)}px`);
+    cursorRing.style.setProperty('--cursor-y', `${y.toFixed(2)}px`);
+  };
+
+  document.addEventListener('pointermove', (event) => {
+    if (!moveCursor) {
+      applyCursorPosition({ x: event.clientX, y: event.clientY });
+      moveCursor = createMotionChannel({ x: event.clientX, y: event.clientY }, applyCursorPosition, null, 34);
+      document.body.classList.add('cursor-enhanced');
+    }
+
+    cursorRing.classList.remove('is-hidden');
+    cursorRing.classList.toggle('is-hovering', event.target instanceof Element && Boolean(event.target.closest(interactiveSelector)));
+    moveCursor({ x: event.clientX, y: event.clientY });
+  }, { passive: true });
+
+  document.addEventListener('pointerdown', () => cursorRing.classList.add('is-pressed'), { passive: true });
+  document.addEventListener('pointerup', () => cursorRing.classList.remove('is-pressed'), { passive: true });
+  document.addEventListener('pointercancel', () => cursorRing.classList.remove('is-pressed'), { passive: true });
+  document.addEventListener('pointerout', (event) => {
+    if (!event.relatedTarget) cursorRing.classList.add('is-hidden');
+  }, { passive: true });
+  window.addEventListener('blur', () => cursorRing.classList.add('is-hidden'));
+}
 
 const updateParallax = () => {
   if (reducedMotion) return;
