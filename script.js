@@ -10,7 +10,9 @@ const emailOptionsClose = document.querySelector('[data-email-options-close]');
 const emailOptionsPanel = document.querySelector('[data-email-options-panel]');
 const copyEmailButtons = document.querySelectorAll('[data-copy-email]');
 const copyEmailLabel = document.querySelector('[data-copy-label]');
-const copyToast = document.querySelector('[data-copy-toast]');
+const EMAIL_ADDRESS = '1997austinalexander@gmail.com';
+const OUTLOOK_WEB = `https://outlook.live.com/mail/0/deeplink/compose?to=${EMAIL_ADDRESS}`;
+const OUTLOOK_APP = `ms-outlook://compose?to=${EMAIL_ADDRESS}`;
 const chapterStatus = document.querySelector('[data-chapter]');
 const hero = document.querySelector('.hero');
 const timeline = document.querySelector('.timeline');
@@ -240,7 +242,10 @@ const setEmailOptionsOpen = (open) => {
   if (!emailOptionsPanel || !emailOptionsButton) return;
   emailOptionsPanel.hidden = !open;
   emailOptionsButton.setAttribute('aria-expanded', String(open));
-  if (!open && copyEmailLabel) copyEmailLabel.textContent = 'Copy address';
+  if (!open) {
+    if (copyEmailLabel) copyEmailLabel.textContent = 'Copy address';
+    if (copyEmailStatus) copyEmailStatus.textContent = '';
+  }
 };
 
 const setConnectSheetOpen = (open) => {
@@ -280,63 +285,63 @@ emailOptionsClose?.addEventListener('click', () => {
   emailOptionsButton?.focus({ preventScroll: true });
 });
 
-const EMAIL_ADDRESS = '1997austinalexander@gmail.com';
-let copyToastTimer = 0;
+const isMobileContactDevice = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-const showCopyToast = (message) => {
-  if (!copyToast) return;
-  copyToast.hidden = false;
-  copyToast.textContent = message;
-  copyToast.classList.add('is-visible');
-  window.clearTimeout(copyToastTimer);
-  copyToastTimer = window.setTimeout(() => {
-    copyToast.classList.remove('is-visible');
-    copyToastTimer = window.setTimeout(() => {
-      copyToast.hidden = true;
-    }, 280);
-  }, 2200);
-};
-
-const copyEmailAddress = async (trigger) => {
-  const email = trigger?.dataset.email || EMAIL_ADDRESS;
-  let copied = false;
+const copyEmailToClipboard = async (email) => {
   try {
     await navigator.clipboard.writeText(email);
-    copied = true;
+    return true;
   } catch {
     const field = document.createElement('textarea');
     field.value = email;
     field.setAttribute('readonly', '');
-    field.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
     document.body.appendChild(field);
-    field.focus();
     field.select();
-    copied = document.execCommand('copy');
+    const copied = document.execCommand('copy');
     field.remove();
+    return copied;
   }
-
-  const message = copied ? 'Email copied' : 'Copy unavailable — 1997austinalexander@gmail.com';
-  if (copyEmailLabel) copyEmailLabel.textContent = copied ? 'Address copied' : 'Copy unavailable';
-  showCopyToast(message);
 };
 
 copyEmailButtons.forEach((button) => {
-  button.addEventListener('click', () => copyEmailAddress(button));
+  button.addEventListener('click', async () => {
+    const email = button.dataset.email || EMAIL_ADDRESS;
+    const copied = await copyEmailToClipboard(email);
+    const label = button.querySelector('[data-copy-label]');
+    const status = button.closest('.email-app-options, .contact-email-card')?.querySelector('[data-copy-status]');
+    const original = button.dataset.copyIdle || button.textContent;
+    if (!button.dataset.copyIdle && !label) button.dataset.copyIdle = original.trim();
+    if (label) label.textContent = copied ? 'Address copied' : 'Copy unavailable';
+    else button.textContent = copied ? 'Copied' : 'Copy unavailable';
+    if (status) status.textContent = copied ? 'Email address copied.' : `Unable to copy. ${EMAIL_ADDRESS}`;
+    if (!label) window.setTimeout(() => { button.textContent = button.dataset.copyIdle || 'Copy email'; }, 1800);
+  });
 });
 
-const isMailProtocol = (href) => href.startsWith('mailto:') || href.startsWith('ms-outlook:');
+const openOutlook = (event) => {
+  if (!isMobileContactDevice) return;
+  event.preventDefault();
+  const started = Date.now();
+  const fallback = window.setTimeout(() => {
+    if (document.visibilityState === 'hidden') return;
+    if (Date.now() - started > 2500) return;
+    window.open(OUTLOOK_WEB, '_blank', 'noopener,noreferrer');
+  }, 700);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) window.clearTimeout(fallback);
+  }, { once: true });
+  window.location.href = OUTLOOK_APP;
+};
+
+document.querySelectorAll('[data-open-outlook]').forEach((link) => {
+  link.addEventListener('click', openOutlook);
+});
 
 connectLayer?.querySelectorAll('a.connect-option, a.email-app-option').forEach((link) => {
-  link.addEventListener('click', (event) => {
-    const href = link.getAttribute('href') || '';
-    // Closing/hiding the sheet on the same tap cancels mailto: on iOS Safari.
-    if (isMailProtocol(href)) {
-      event.stopPropagation();
-      window.setTimeout(() => setConnectSheetOpen(false), 900);
-      return;
-    }
-    window.setTimeout(() => setConnectSheetOpen(false), 180);
-  });
+  link.addEventListener('click', () => window.setTimeout(() => setConnectSheetOpen(false), 0));
 });
 
 document.addEventListener('keydown', (event) => {
@@ -546,32 +551,16 @@ if (!reducedMotion && precisePointer) {
   });
 }
 
-const revealInView = (element) => {
-  element.classList.add('visible');
-  element.closest('.manifesto')?.classList.add('activated');
-};
-
-if (reducedMotion) {
-  reveals.forEach(revealInView);
-} else {
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      revealInView(entry.target);
-      revealObserver.unobserve(entry.target);
-    });
-  }, { threshold: 0.08, rootMargin: '0px 0px -8%' });
-
-  // Wait two frames so opacity:0 is committed before any in-view class is added.
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => {
-      document.querySelectorAll('.hero-reveal').forEach(revealInView);
-      reveals.forEach((element) => {
-        if (!element.classList.contains('visible')) revealObserver.observe(element);
-      });
-    });
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add('visible');
+    entry.target.closest('.manifesto')?.classList.add('activated');
+    revealObserver.unobserve(entry.target);
   });
-}
+}, { threshold: 0.12, rootMargin: '0px 0px -40px' });
+
+reveals.forEach((element) => revealObserver.observe(element));
 
 const roleFocusObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => entry.target.classList.toggle('in-focus', entry.isIntersecting));
