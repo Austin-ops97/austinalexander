@@ -2,6 +2,15 @@ const header = document.querySelector('[data-header]');
 const progressBar = document.querySelector('[data-scroll-progress]');
 const cursorRing = document.querySelector('[data-cursor]');
 const mobileDock = document.querySelector('[data-mobile-dock]');
+const connectLayer = document.querySelector('[data-connect-layer]');
+const connectOpenButton = document.querySelector('[data-connect-open]');
+const connectCloseButtons = document.querySelectorAll('[data-connect-close]');
+const emailOptionsButton = document.querySelector('[data-email-options]');
+const emailOptionsClose = document.querySelector('[data-email-options-close]');
+const emailOptionsPanel = document.querySelector('[data-email-options-panel]');
+const copyEmailButton = document.querySelector('[data-copy-email]');
+const copyEmailLabel = document.querySelector('[data-copy-label]');
+const copyEmailStatus = document.querySelector('[data-copy-status]');
 const chapterStatus = document.querySelector('[data-chapter]');
 const hero = document.querySelector('.hero');
 const timeline = document.querySelector('.timeline');
@@ -93,7 +102,7 @@ if (!reducedMotion && precisePointer && cursorRing) {
 }
 
 const getParallaxOffsets = () => {
-  if (reducedMotion) return [];
+  if (reducedMotion || window.innerWidth <= 700) return [];
   const viewportCenter = window.innerHeight / 2;
   const offsets = [];
 
@@ -118,6 +127,11 @@ const getTimelineProgress = () => {
 
 const settleMobileDock = (scrollY) => {
   if (!mobileDock || window.innerWidth > 700) return;
+  if (document.body.classList.contains('connect-sheet-open')) {
+    mobileDock.classList.remove('hidden');
+    lastScrollY = scrollY;
+    return;
+  }
   const movingDown = scrollY > lastScrollY;
   const moved = Math.abs(scrollY - lastScrollY) > 5;
 
@@ -218,12 +232,98 @@ if (!reducedMotion && precisePointer) {
       wheelPosition = window.scrollY;
       wheelTarget = window.scrollY;
       wheelVelocity = 0;
-      wheelFrameTime = 0;
+      wheelFrameTime = performance.now();
     }
     wheelTarget = clamp(wheelTarget + inputDelta, 0, document.documentElement.scrollHeight - window.innerHeight);
+    wheelVelocity = clamp(wheelVelocity + inputDelta * 5.6, -2200, 2200);
     if (!wheelFrame) wheelFrame = window.requestAnimationFrame(animateWheelScroll);
   }, { passive: false });
 }
+
+let connectSheetTimer = 0;
+let connectSheetReturnFocus = null;
+
+const setEmailOptionsOpen = (open) => {
+  if (!emailOptionsPanel || !emailOptionsButton) return;
+  emailOptionsPanel.hidden = !open;
+  emailOptionsButton.setAttribute('aria-expanded', String(open));
+  if (!open) {
+    if (copyEmailLabel) copyEmailLabel.textContent = 'Copy address';
+    if (copyEmailStatus) copyEmailStatus.textContent = '';
+  }
+};
+
+const setConnectSheetOpen = (open) => {
+  if (!connectLayer || !connectOpenButton) return;
+  window.clearTimeout(connectSheetTimer);
+
+  if (open) {
+    connectSheetReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : connectOpenButton;
+    connectLayer.hidden = false;
+    mobileDock?.classList.remove('hidden');
+    document.body.classList.add('connect-sheet-open');
+    connectOpenButton.setAttribute('aria-expanded', 'true');
+    window.requestAnimationFrame(() => {
+      connectLayer.classList.add('is-open');
+      connectLayer.querySelector('.connect-sheet-close')?.focus({ preventScroll: true });
+    });
+    return;
+  }
+
+  connectLayer.classList.remove('is-open');
+  document.body.classList.remove('connect-sheet-open');
+  connectOpenButton.setAttribute('aria-expanded', 'false');
+  setEmailOptionsOpen(false);
+  connectSheetTimer = window.setTimeout(() => {
+    connectLayer.hidden = true;
+  }, reducedMotion ? 0 : 360);
+  connectSheetReturnFocus?.focus({ preventScroll: true });
+};
+
+connectOpenButton?.addEventListener('click', () => {
+  setConnectSheetOpen(!connectLayer?.classList.contains('is-open'));
+});
+connectCloseButtons.forEach((button) => button.addEventListener('click', () => setConnectSheetOpen(false)));
+emailOptionsButton?.addEventListener('click', () => setEmailOptionsOpen(emailOptionsPanel?.hidden ?? true));
+emailOptionsClose?.addEventListener('click', () => {
+  setEmailOptionsOpen(false);
+  emailOptionsButton?.focus({ preventScroll: true });
+});
+
+const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const iosMailOption = document.querySelector('[data-ios-mail]');
+if (iosMailOption instanceof HTMLElement) iosMailOption.hidden = !isIOSDevice;
+
+copyEmailButton?.addEventListener('click', async () => {
+  const email = copyEmailButton.dataset.email || '';
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(email);
+    copied = true;
+  } catch {
+    const field = document.createElement('textarea');
+    field.value = email;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    copied = document.execCommand('copy');
+    field.remove();
+  }
+
+  if (copyEmailLabel) copyEmailLabel.textContent = copied ? 'Address copied' : 'Copy unavailable';
+  if (copyEmailStatus) copyEmailStatus.textContent = copied ? 'Email address copied to your clipboard.' : 'Unable to copy. The address is 1997austinalexander@gmail.com.';
+});
+
+connectLayer?.querySelectorAll('a.connect-option, a.email-app-option').forEach((link) => {
+  link.addEventListener('click', () => window.setTimeout(() => setConnectSheetOpen(false), 0));
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && connectLayer?.classList.contains('is-open')) setConnectSheetOpen(false);
+});
 
 const updatePortfolioPressedState = (visual, activeImage) => {
   visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {

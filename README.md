@@ -1,6 +1,6 @@
 # Austin Alexander Portfolio
 
-A responsive portfolio and resume site for Austin L. Alexander, focused on power-generation operations, Remote Operations Center delivery, and software development.
+A responsive portfolio and resume site for Austin Alexander, focused on power-generation operations, Remote Operations Center delivery, and software development.
 
 ## Local preview
 
