@@ -11,7 +11,7 @@ const parallaxVisuals = document.querySelectorAll('.project-visual');
 const productStories = document.querySelectorAll('.product-story');
 const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
-const portfolioModeControls = document.querySelectorAll('[data-portfolio-mode]');
+const portfolioImages = document.querySelectorAll('[data-portfolio-image]');
 const chapterSections = document.querySelectorAll('#intro, #work, #products, #capabilities, #contact');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -193,19 +193,24 @@ if (!reducedMotion && precisePointer) {
   }, { passive: false });
 }
 
-const setPortfolioMode = (modeControl) => {
-  const visual = modeControl.closest('.dual-landscape');
+const setPortfolioImageFront = (image) => {
+  const visual = image.closest('.dual-landscape');
   if (!visual) return;
-  visual.dataset.mode = modeControl.dataset.portfolioMode;
-  visual.querySelectorAll('[data-portfolio-mode]').forEach((control) => {
-    control.setAttribute('aria-pressed', String(control === modeControl));
+  visual.dataset.activeImage = image.dataset.portfolioImage;
+  visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {
+    portfolioImage.setAttribute('aria-pressed', String(portfolioImage === image));
   });
 };
 
-portfolioModeControls.forEach((control) => {
-  control.addEventListener('click', () => setPortfolioMode(control));
+portfolioImages.forEach((image) => {
+  image.addEventListener('click', () => setPortfolioImageFront(image));
+  image.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    setPortfolioImageFront(image);
+  });
   if (precisePointer) {
-    control.addEventListener('pointerenter', () => setPortfolioMode(control), { passive: true });
+    image.addEventListener('pointerenter', () => setPortfolioImageFront(image), { passive: true });
   }
 });
 
@@ -233,6 +238,7 @@ if (!reducedMotion && precisePointer) {
   });
 
   productStories.forEach((story) => {
+    if (story.querySelector('.dual-landscape')) return;
     let storyResting = false;
     const moveStory = createMotionChannel({ tiltX: 0, tiltY: 0, lift: 0 }, ({ tiltX, tiltY, lift }) => {
       story.style.setProperty('--tilt-x', `${tiltX.toFixed(3)}deg`);
