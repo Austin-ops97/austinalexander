@@ -11,6 +11,7 @@ const parallaxVisuals = document.querySelectorAll('.project-visual');
 const productStories = document.querySelectorAll('.product-story');
 const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
+const portfolioModeControls = document.querySelectorAll('[data-portfolio-mode]');
 const chapterSections = document.querySelectorAll('#intro, #work, #products, #capabilities, #contact');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -52,6 +53,9 @@ const createMotionChannel = (initialValues, apply, onSettle, response = 72) => {
 let ticking = false;
 let lastScrollY = window.scrollY;
 let dockTimer;
+let wheelFrame = 0;
+let wheelTarget = window.scrollY;
+let wheelFrameTime = 0;
 
 if (!reducedMotion && precisePointer && cursorRing) {
   const interactiveSelector = 'a,button,input,textarea,select,label,summary,[role="button"],[tabindex]';
@@ -83,63 +87,127 @@ if (!reducedMotion && precisePointer && cursorRing) {
   window.addEventListener('blur', () => cursorRing.classList.add('is-hidden'));
 }
 
-const updateParallax = () => {
-  if (reducedMotion) return;
+const getParallaxOffsets = () => {
+  if (reducedMotion) return [];
   const viewportCenter = window.innerHeight / 2;
+  const offsets = [];
 
   parallaxVisuals.forEach((visual) => {
     const rect = visual.getBoundingClientRect();
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
     const visualCenter = rect.top + rect.height / 2;
     const offset = Math.round(clamp((viewportCenter - visualCenter) * 0.035, -22, 22));
-    visual.style.setProperty('--parallax', `${offset}px`);
+    offsets.push([visual, offset]);
   });
+
+  return offsets;
 };
 
-const updateTimeline = () => {
-  if (!timeline) return;
+const getTimelineProgress = () => {
+  if (!timeline) return null;
   const rect = timeline.getBoundingClientRect();
   const start = window.innerHeight * 0.68;
   const distance = Math.max(rect.height - window.innerHeight * 0.2, 1);
-  const progress = clamp((start - rect.top) / distance, 0, 1);
-  timeline.style.setProperty('--timeline-progress', progress.toFixed(4));
-
-  roles.forEach((role) => {
-    const roleRect = role.getBoundingClientRect();
-    const roleCenter = roleRect.top + roleRect.height / 2;
-    role.classList.toggle('in-focus', roleCenter > window.innerHeight * 0.26 && roleCenter < window.innerHeight * 0.72);
-  });
+  return clamp((start - rect.top) / distance, 0, 1);
 };
 
-const settleMobileDock = () => {
+const settleMobileDock = (scrollY) => {
   if (!mobileDock || window.innerWidth > 700) return;
-  const movingDown = window.scrollY > lastScrollY;
-  const moved = Math.abs(window.scrollY - lastScrollY) > 5;
+  const movingDown = scrollY > lastScrollY;
+  const moved = Math.abs(scrollY - lastScrollY) > 5;
 
-  if (movingDown && moved && window.scrollY > 140) mobileDock.classList.add('hidden');
+  if (movingDown && moved && scrollY > 140) mobileDock.classList.add('hidden');
   window.clearTimeout(dockTimer);
   dockTimer = window.setTimeout(() => mobileDock.classList.remove('hidden'), 220);
-  lastScrollY = window.scrollY;
+  lastScrollY = scrollY;
 };
 
 const updateScene = () => {
-  updateParallax();
-  updateTimeline();
+  const scrollY = window.scrollY;
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? scrollY / scrollable : 0;
+  const timelineProgress = getTimelineProgress();
+  const parallaxOffsets = getParallaxOffsets();
+
+  settleMobileDock(scrollY);
+  header?.classList.toggle('scrolled', scrollY > 20);
+  if (progressBar) progressBar.style.transform = `scaleX(${clamp(progress, 0, 1)})`;
+  if (timelineProgress !== null) timeline.style.setProperty('--timeline-progress', timelineProgress.toFixed(4));
+  parallaxOffsets.forEach(([visual, offset]) => visual.style.setProperty('--parallax', `${offset}px`));
   ticking = false;
 };
 
-const onScroll = () => {
-  header?.classList.toggle('scrolled', window.scrollY > 20);
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
-  if (progressBar) progressBar.style.transform = `scaleX(${clamp(progress, 0, 1)})`;
-  settleMobileDock();
-
+const scheduleSceneUpdate = () => {
   if (!ticking) {
     window.requestAnimationFrame(updateScene);
     ticking = true;
   }
 };
+
+const onScroll = () => scheduleSceneUpdate();
+
+if (!reducedMotion && precisePointer) {
+  const animateWheelScroll = (time) => {
+    const elapsed = wheelFrameTime ? Math.min(time - wheelFrameTime, 34) : 16.7;
+    wheelFrameTime = time;
+    const current = window.scrollY;
+    const distance = wheelTarget - current;
+    const next = Math.abs(distance) < 0.6
+      ? wheelTarget
+      : current + distance * (1 - Math.exp(-elapsed / 105));
+
+    window.scrollTo({ top: next, behavior: 'instant' });
+    if (next === wheelTarget) {
+      wheelFrame = 0;
+      wheelFrameTime = 0;
+      return;
+    }
+
+    wheelFrame = window.requestAnimationFrame(animateWheelScroll);
+  };
+
+  window.addEventListener('wheel', (event) => {
+    if (event.ctrlKey || event.shiftKey || event.deltaX !== 0 || event.deltaY === 0) return;
+
+    const isSteppedWheel = event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL
+      || Math.abs(event.deltaY) >= 60;
+
+    if (!isSteppedWheel) {
+      if (wheelFrame) {
+        window.cancelAnimationFrame(wheelFrame);
+        wheelFrame = 0;
+        wheelFrameTime = 0;
+      }
+      return;
+    }
+
+    event.preventDefault();
+    const lineScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? 40
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? window.innerHeight
+        : 1;
+    if (!wheelFrame) wheelTarget = window.scrollY;
+    wheelTarget = clamp(wheelTarget + event.deltaY * lineScale, 0, document.documentElement.scrollHeight - window.innerHeight);
+    if (!wheelFrame) wheelFrame = window.requestAnimationFrame(animateWheelScroll);
+  }, { passive: false });
+}
+
+const setPortfolioMode = (modeControl) => {
+  const visual = modeControl.closest('.dual-landscape');
+  if (!visual) return;
+  visual.dataset.mode = modeControl.dataset.portfolioMode;
+  visual.querySelectorAll('[data-portfolio-mode]').forEach((control) => {
+    control.setAttribute('aria-pressed', String(control === modeControl));
+  });
+};
+
+portfolioModeControls.forEach((control) => {
+  control.addEventListener('click', () => setPortfolioMode(control));
+  if (precisePointer) {
+    control.addEventListener('pointerenter', () => setPortfolioMode(control), { passive: true });
+  }
+});
 
 if (!reducedMotion && precisePointer) {
   let heroResting = false;
@@ -201,6 +269,12 @@ const revealObserver = new IntersectionObserver((entries) => {
 
 reveals.forEach((element) => revealObserver.observe(element));
 
+const roleFocusObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => entry.target.classList.toggle('in-focus', entry.isIntersecting));
+}, { threshold: 0, rootMargin: '-26% 0px -28%' });
+
+roles.forEach((role) => roleFocusObserver.observe(role));
+
 const projectObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (!entry.isIntersecting) return;
@@ -231,7 +305,7 @@ const chapterObserver = new IntersectionObserver((entries) => {
 chapterSections.forEach((section) => chapterObserver.observe(section));
 printTriggers.forEach((trigger) => trigger.addEventListener('click', () => window.print()));
 window.addEventListener('scroll', onScroll, { passive: true });
-window.addEventListener('resize', updateScene, { passive: true });
+window.addEventListener('resize', scheduleSceneUpdate, { passive: true });
 
 onScroll();
 updateScene();
