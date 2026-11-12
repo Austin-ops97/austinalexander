@@ -191,14 +191,20 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .screenshot-panel::before { content: ""; position: absolute; inset: 8px; z-index: 3; pointer-events: none; opacity: .55; background: linear-gradient(#d8e9ff,#d8e9ff) left top/18px 1px no-repeat,linear-gradient(#d8e9ff,#d8e9ff) left top/1px 18px no-repeat,linear-gradient(#d8e9ff,#d8e9ff) right bottom/18px 1px no-repeat,linear-gradient(#d8e9ff,#d8e9ff) right bottom/1px 18px no-repeat; transition: opacity .35s; }
 .screenshot-panel img { width: 100%; height: auto; display: block; object-fit: contain; object-position: center; }
 .landscape-visual .screenshot-panel { max-width: 1080px; }
-.dual-landscape { min-height: 650px; align-content: center; }
+.dual-landscape { min-height: 840px; align-content: center; transform-style: preserve-3d; z-index: 1; }
 .dual-landscape::before { display: none; }
-.dual-landscape .screenshot-panel { width: min(830px,82vw); position: absolute; }
+.dual-landscape::after { display: none; }
+.product-story.warm::after { display: none; }
+.dual-landscape .screenshot-panel { width: min(740px,calc(100% + clamp(0px,2.2vw,28px))); position: absolute; transform-style: preserve-3d; backface-visibility: hidden; box-shadow: 0 16px 38px rgba(0,0,0,.3); transition: transform .46s cubic-bezier(.22,.7,.25,1); }
 .dual-landscape .light-shot { left: 0; top: 7%; z-index: 2; }
 .dual-landscape .dark-shot { right: 0; bottom: 7%; z-index: 1; }
 .dual-landscape[data-active-image="light"] .light-shot,
 .dual-landscape[data-active-image="dark"] .dark-shot { z-index: 4; }
-.dual-landscape .screenshot-panel:hover { border-color: rgba(255,255,255,.15); box-shadow: 0 42px 110px rgba(0,0,0,.58), 0 0 0 1px rgba(0,0,0,.5); }
+.dual-landscape[data-transition-phase="recede"][data-transition-from="light"] .light-shot { z-index: 4; transform: translate3d(-18px,-10px,-70px) scale(.93) rotateY(-6deg); }
+.dual-landscape[data-transition-phase="recede"][data-transition-from="light"] .dark-shot { z-index: 1; transform: translate3d(18px,12px,-44px) scale(.96) rotateY(4deg); }
+.dual-landscape[data-transition-phase="recede"][data-transition-from="dark"] .dark-shot { z-index: 4; transform: translate3d(18px,10px,-70px) scale(.93) rotateY(6deg); }
+.dual-landscape[data-transition-phase="recede"][data-transition-from="dark"] .light-shot { z-index: 1; transform: translate3d(-18px,-12px,-44px) scale(.96) rotateY(-4deg); }
+.dual-landscape .screenshot-panel:hover { border-color: rgba(255,255,255,.15); box-shadow: 0 16px 38px rgba(0,0,0,.3); }
 .dual-landscape .screenshot-panel:focus-visible { outline: 2px solid #9ac5ff; outline-offset: 5px; }
 .portrait-visual { min-height: 760px; }
 .portrait-visual .portrait-shot { width: min(510px,72vw); }
@@ -267,7 +273,7 @@ footer p { margin: 0; line-height: 1.6; }
   .product-story { grid-template-columns: 1fr; min-height: auto; gap: 70px; }
   .product-copy { max-width: 680px; }
   .project-visual { width: 100%; }
-  .dual-landscape { min-height: 620px; }
+  .dual-landscape { min-height: 720px; }
   .portrait-visual { min-height: 680px; }
   .portrait-pair { min-height: 700px; }
   .manifesto { grid-template-columns: 1fr; }
@@ -307,10 +313,9 @@ footer p { margin: 0; line-height: 1.6; }
   .product-copy h3 { font-size: clamp(42px,13vw,64px); }
   .screenshot-panel { border-radius: 8px; }
   .project-visual { min-width: 0; max-width: 100%; }
-  .dual-landscape { min-height: auto; display: grid; align-content: start; gap: 16px; }
+  .dual-landscape { min-height: auto; display: grid; align-content: start; gap: 24px; }
   .dual-landscape .screenshot-panel { position: relative; left: auto; top: auto; right: auto; bottom: auto; translate: none; width: 100%; max-width: 100%; }
-  .dual-landscape[data-active-image="dark"] .dark-shot { order: 0; }
-  .dual-landscape[data-active-image="dark"] .light-shot { order: 1; }
+  .dual-landscape .screenshot-panel, .dual-landscape .screenshot-panel:hover { box-shadow: 0 8px 20px rgba(0,0,0,.26); }
   .portrait-visual { min-height: auto; }
   .portrait-visual .portrait-shot { width: 100%; max-width: 100%; }
   .portrait-pair { min-height: auto; grid-template-columns: 1fr; gap: 18px; }

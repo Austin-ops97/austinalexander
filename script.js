@@ -12,6 +12,7 @@ const productStories = document.querySelectorAll('.product-story');
 const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
 const portfolioImages = document.querySelectorAll('[data-portfolio-image]');
+const portfolioTransitionTimers = new WeakMap();
 const chapterSections = document.querySelectorAll('#intro, #work, #products, #capabilities, #contact');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -196,7 +197,39 @@ if (!reducedMotion && precisePointer) {
 const setPortfolioImageFront = (image) => {
   const visual = image.closest('.dual-landscape');
   if (!visual) return;
-  visual.dataset.activeImage = image.dataset.portfolioImage;
+
+  const imageMode = image.dataset.portfolioImage;
+  const currentTarget = visual.dataset.transitionTarget;
+  if (currentTarget === imageMode) return;
+
+  const transitionTimer = portfolioTransitionTimers.get(visual);
+  if (transitionTimer) window.clearTimeout(transitionTimer);
+
+  const currentImage = visual.dataset.activeImage;
+  if (currentImage === imageMode || reducedMotion) {
+    visual.dataset.activeImage = imageMode;
+    visual.removeAttribute('data-transition-phase');
+    visual.removeAttribute('data-transition-from');
+    visual.removeAttribute('data-transition-target');
+    portfolioTransitionTimers.delete(visual);
+  } else {
+    visual.dataset.transitionFrom = currentImage;
+    visual.dataset.transitionTarget = imageMode;
+    visual.dataset.transitionPhase = 'recede';
+    const transitionTimer = window.setTimeout(() => {
+      visual.dataset.activeImage = imageMode;
+      visual.dataset.transitionPhase = 'approach';
+      const finishTimer = window.setTimeout(() => {
+        visual.removeAttribute('data-transition-phase');
+        visual.removeAttribute('data-transition-from');
+        visual.removeAttribute('data-transition-target');
+        portfolioTransitionTimers.delete(visual);
+      }, 460);
+      portfolioTransitionTimers.set(visual, finishTimer);
+    }, 220);
+    portfolioTransitionTimers.set(visual, transitionTimer);
+  }
+
   visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {
     portfolioImage.setAttribute('aria-pressed', String(portfolioImage === image));
   });
