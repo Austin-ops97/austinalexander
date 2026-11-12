@@ -64,8 +64,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .hero-orbit { position: absolute; border: 1px solid rgba(255,255,255,.1); border-radius: 50%; z-index: -1; transform: translateZ(0) rotate(0deg); transform-origin: 50% 50%; backface-visibility: hidden; will-change: transform; animation: hero-orbit-spin 24s linear infinite; }
 .hero-orbit::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; border-top: 1px solid rgba(142,190,255,.62); border-right: 1px solid transparent; border-bottom: 1px solid transparent; border-left: 1px solid transparent; }
 .hero-orbit::after { content: ""; position: absolute; width: 5px; height: 5px; left: 50%; top: -3px; border-radius: 50%; background: #d9eaff; box-shadow: 0 0 12px #6eaeff; will-change: opacity; animation: signal-beacon 3.8s ease-in-out infinite; }
-.orbit-one { width: 680px; height: 680px; right: -160px; top: 10%; }
+.hero-orbit > span { position: absolute; width: 4px; height: 4px; left: 50%; bottom: -2px; border-radius: 50%; background: rgba(150,195,255,.9); box-shadow: 0 0 10px rgba(102,169,255,.85); transform: translateX(-50%); }
+.orbit-one { width: 680px; height: 680px; right: -88px; top: 10%; }
 .orbit-two { width: 400px; height: 400px; right: -20px; top: 26%; border-color: rgba(104,167,255,.14); animation-duration: 17s; animation-direction: reverse; }
+.orbit-two > span { background: rgba(218,235,255,.95); box-shadow: 0 0 11px rgba(130,188,255,.9); }
 @keyframes hero-orbit-spin { to { transform: translateZ(0) rotate(360deg); } }
 @keyframes horizon-scan { 0%,18% { transform: translateX(-130%); opacity: 0; } 28% { opacity: .9; } 68% { opacity: .55; } 78%,100% { transform: translateX(680%); opacity: 0; } }
 @keyframes signal-beacon { 0%,100% { opacity: .42; } 50% { opacity: 1; } }
