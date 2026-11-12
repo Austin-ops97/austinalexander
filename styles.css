@@ -200,7 +200,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .dual-landscape .dark-shot { right: 0; bottom: 7%; z-index: 1; }
 .dual-landscape[data-active-image="light"] .light-shot,
 .dual-landscape[data-active-image="dark"] .dark-shot { z-index: 4; border-color: rgba(191,218,255,.3); }
-.dual-landscape[data-transitioning="true"] .screenshot-panel { will-change: transform; transition: none; }
+.dual-landscape[data-hovered-image="light"] .light-shot,
+.dual-landscape[data-hovered-image="dark"] .dark-shot { border-color: rgba(209,229,255,.46); box-shadow: 0 20px 46px rgba(0,0,0,.34), 0 0 0 1px rgba(143,188,255,.1); }
+.dual-landscape[data-transitioning="true"] .screenshot-panel { will-change: transform,opacity; transition: none; }
 .dual-landscape .screenshot-panel:hover { border-color: rgba(255,255,255,.15); box-shadow: 0 16px 38px rgba(0,0,0,.3); }
 .dual-landscape .screenshot-panel:focus-visible { outline: 2px solid #9ac5ff; outline-offset: 5px; }
 .portrait-visual { min-height: 760px; }

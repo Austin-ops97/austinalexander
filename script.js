@@ -13,6 +13,7 @@ const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
 const portfolioImages = document.querySelectorAll('[data-portfolio-image]');
 const portfolioTransitions = new WeakMap();
+const portfolioHoverIntents = new WeakMap();
 const chapterSections = document.querySelectorAll('#intro, #work, #products, #capabilities, #contact');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -218,8 +219,8 @@ const animatePortfolioImageFront = (visual, imageMode) => {
   if (!incoming || !outgoing || incoming === outgoing) return;
 
   const direction = imageMode === 'dark' ? 1 : -1;
-  const duration = 920;
-  const easing = 'cubic-bezier(.2,.72,.16,1)';
+  const duration = 1440;
+  const easing = 'cubic-bezier(.42,0,.2,1)';
 
   visual.dataset.transitioning = 'true';
   updatePortfolioPressedState(visual, imageMode);
@@ -227,20 +228,21 @@ const animatePortfolioImageFront = (visual, imageMode) => {
   outgoing.style.zIndex = '4';
 
   const incomingAnimation = incoming.animate([
-    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 0 },
-    { transform: `translate3d(${direction * 14}px,8px,-72px) scale(.955) rotateY(${direction * -4}deg)`, offset: .2 },
-    { transform: `translate3d(${direction * 78}px,-8px,-118px) scale(.91) rotateY(${direction * -8}deg)`, offset: .43 },
-    { transform: `translate3d(${direction * 104}px,-18px,-38px) scale(.96) rotateY(${direction * -4}deg)`, offset: .58 },
-    { transform: `translate3d(${direction * 44}px,-10px,24px) scale(1.018) rotateY(${direction * 1.4}deg)`, offset: .76 },
-    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 1 }
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', opacity: 1, offset: 0 },
+    { transform: `translate3d(${direction * 28}px,10px,-82px) scale(.95) rotateY(${direction * -4}deg)`, opacity: .98, offset: .2 },
+    { transform: `translate3d(${direction * 138}px,-8px,-164px) scale(.885) rotateY(${direction * -10}deg)`, opacity: .94, offset: .46 },
+    { transform: `translate3d(${direction * 214}px,-22px,-92px) scale(.91) rotateY(${direction * -7}deg)`, opacity: .98, offset: .63 },
+    { transform: `translate3d(${direction * 92}px,-12px,34px) scale(1.015) rotateY(${direction * 1.8}deg)`, opacity: 1, offset: .8 },
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', opacity: 1, offset: 1 }
   ], { duration, easing, fill: 'both' });
 
   const outgoingAnimation = outgoing.animate([
-    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 0 },
-    { transform: `translate3d(${direction * -10}px,-5px,18px) scale(1.008) rotateY(${direction * 1.5}deg)`, offset: .2 },
-    { transform: `translate3d(${direction * -22}px,8px,-68px) scale(.95) rotateY(${direction * 4}deg)`, offset: .5 },
-    { transform: `translate3d(${direction * -8}px,5px,-34px) scale(.975) rotateY(${direction * 2}deg)`, offset: .72 },
-    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 1 }
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', opacity: 1, offset: 0 },
+    { transform: `translate3d(${direction * -8}px,-4px,18px) scale(1.008) rotateY(${direction * 1.5}deg)`, opacity: 1, offset: .26 },
+    { transform: `translate3d(${direction * -34}px,7px,-86px) scale(.94) rotateY(${direction * 5}deg)`, opacity: .88, offset: .5 },
+    { transform: `translate3d(${direction * -72}px,14px,-152px) scale(.875) rotateY(${direction * 8}deg)`, opacity: .58, offset: .63 },
+    { transform: `translate3d(${direction * -26}px,7px,-72px) scale(.955) rotateY(${direction * 3}deg)`, opacity: .82, offset: .8 },
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', opacity: 1, offset: 1 }
   ], { duration, easing, fill: 'both' });
 
   const animations = [incomingAnimation, outgoingAnimation];
@@ -253,7 +255,7 @@ const animatePortfolioImageFront = (visual, imageMode) => {
 
     const timelineProgress = Math.max(0, Math.min(1, (incomingAnimation.currentTime || 0) / duration));
     const visualProgress = incomingAnimation.effect?.getComputedTiming().progress ?? timelineProgress;
-    if (!transition.planeSwapped && visualProgress >= .59) {
+    if (!transition.planeSwapped && visualProgress >= .64) {
       transition.planeSwapped = true;
       incoming.style.zIndex = '5';
       outgoing.style.zIndex = '1';
@@ -273,14 +275,14 @@ const animatePortfolioImageFront = (visual, imageMode) => {
   transition.frame = window.requestAnimationFrame(followAnimation);
 };
 
-const setPortfolioImageFront = (image) => {
+const setPortfolioImageFront = (image, { queueDuringTransition = true } = {}) => {
   const visual = image.closest('.dual-landscape');
   if (!visual) return;
 
   const imageMode = image.dataset.portfolioImage;
   const currentTransition = portfolioTransitions.get(visual);
   if (currentTransition) {
-    if (currentTransition.target !== imageMode) currentTransition.queuedTarget = imageMode;
+    if (queueDuringTransition && currentTransition.target !== imageMode) currentTransition.queuedTarget = imageMode;
     return;
   }
 
@@ -296,15 +298,53 @@ const setPortfolioImageFront = (image) => {
   animatePortfolioImageFront(visual, imageMode);
 };
 
+const clearPortfolioHoverIntent = (visual) => {
+  const hoverIntent = portfolioHoverIntents.get(visual);
+  if (hoverIntent) window.clearTimeout(hoverIntent.timer);
+  portfolioHoverIntents.delete(visual);
+};
+
+const startPortfolioHoverIntent = (image) => {
+  const visual = image.closest('.dual-landscape');
+  if (!visual) return;
+
+  clearPortfolioHoverIntent(visual);
+  visual.dataset.hoveredImage = image.dataset.portfolioImage;
+
+  const timer = window.setTimeout(() => {
+    const hoverIntent = portfolioHoverIntents.get(visual);
+    if (!hoverIntent || hoverIntent.image !== image || !image.matches(':hover')) {
+      portfolioHoverIntents.delete(visual);
+      return;
+    }
+    portfolioHoverIntents.delete(visual);
+    setPortfolioImageFront(image, { queueDuringTransition: false });
+  }, 260);
+
+  portfolioHoverIntents.set(visual, { image, timer });
+};
+
 portfolioImages.forEach((image) => {
-  image.addEventListener('click', () => setPortfolioImageFront(image));
+  image.addEventListener('click', () => {
+    const visual = image.closest('.dual-landscape');
+    if (visual) clearPortfolioHoverIntent(visual);
+    setPortfolioImageFront(image);
+  });
   image.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
+    const visual = image.closest('.dual-landscape');
+    if (visual) clearPortfolioHoverIntent(visual);
     setPortfolioImageFront(image);
   });
   if (precisePointer) {
-    image.addEventListener('pointerenter', () => setPortfolioImageFront(image), { passive: true });
+    image.addEventListener('pointerenter', () => startPortfolioHoverIntent(image), { passive: true });
+    image.addEventListener('pointerleave', () => {
+      const visual = image.closest('.dual-landscape');
+      if (!visual) return;
+      clearPortfolioHoverIntent(visual);
+      if (visual.dataset.hoveredImage === image.dataset.portfolioImage) visual.removeAttribute('data-hovered-image');
+    }, { passive: true });
   }
 });
 
