@@ -64,6 +64,10 @@ const createMotionChannel = (initialValues, apply, onSettle, response = 72) => {
 let ticking = false;
 let timelineMetrics = null;
 const parallaxMetrics = new WeakMap();
+let smoothWheelFrame = 0;
+let smoothWheelTarget = window.scrollY;
+let smoothWheelPosition = window.scrollY;
+let smoothWheelLastTime = 0;
 
 if (!reducedMotion && precisePointer && cursorRing) {
   const interactiveSelector = 'a,button,input,textarea,select,label,summary,[role="button"],[tabindex]';
@@ -160,6 +164,74 @@ const scheduleSceneUpdate = () => {
 };
 
 const onScroll = () => scheduleSceneUpdate();
+
+if (!reducedMotion && precisePointer) {
+  const stopSmoothWheel = () => {
+    if (smoothWheelFrame) window.cancelAnimationFrame(smoothWheelFrame);
+    smoothWheelFrame = 0;
+    smoothWheelLastTime = 0;
+    smoothWheelPosition = window.scrollY;
+    smoothWheelTarget = window.scrollY;
+  };
+
+  const animateSmoothWheel = (time) => {
+    const elapsed = smoothWheelLastTime ? Math.min(time - smoothWheelLastTime, 34) : 1000 / 120;
+    const blend = 1 - Math.exp(-elapsed / 82);
+    const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+    smoothWheelLastTime = time;
+    smoothWheelTarget = clamp(smoothWheelTarget, 0, maxScroll);
+    smoothWheelPosition += (smoothWheelTarget - smoothWheelPosition) * blend;
+
+    const settled = Math.abs(smoothWheelTarget - smoothWheelPosition) < .35;
+    if (settled) smoothWheelPosition = smoothWheelTarget;
+    window.scrollTo({ top: smoothWheelPosition, behavior: 'instant' });
+
+    if (settled) {
+      smoothWheelFrame = 0;
+      smoothWheelLastTime = 0;
+      return;
+    }
+
+    smoothWheelFrame = window.requestAnimationFrame(animateSmoothWheel);
+  };
+
+  window.addEventListener('wheel', (event) => {
+    if (event.ctrlKey || event.shiftKey || event.deltaX !== 0 || event.deltaY === 0) return;
+
+    const steppedInput = event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL || Math.abs(event.deltaY) >= 48;
+    if (!steppedInput) {
+      if (smoothWheelFrame) stopSmoothWheel();
+      return;
+    }
+
+    event.preventDefault();
+    const lineScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? 36
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? window.innerHeight
+        : 1;
+    const inputDelta = clamp(event.deltaY * lineScale, -280, 280);
+    const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+
+    if (!smoothWheelFrame) {
+      smoothWheelPosition = window.scrollY;
+      smoothWheelTarget = window.scrollY;
+      smoothWheelLastTime = 0;
+    }
+
+    smoothWheelTarget = clamp(smoothWheelTarget + inputDelta, 0, maxScroll);
+
+    // Move on the input event itself so the first wheel notch never waits for
+    // the next animation frame. The remaining distance is eased at the
+    // display's actual refresh rate by requestAnimationFrame.
+    smoothWheelPosition = clamp(smoothWheelPosition + inputDelta * .2, 0, maxScroll);
+    window.scrollTo({ top: smoothWheelPosition, behavior: 'instant' });
+
+    if (!smoothWheelFrame) smoothWheelFrame = window.requestAnimationFrame(animateSmoothWheel);
+  }, { passive: false });
+
+  window.addEventListener('blur', stopSmoothWheel);
+}
 
 let connectSheetTimer = 0;
 let connectSheetReturnFocus = null;
