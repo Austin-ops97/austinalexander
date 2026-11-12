@@ -76,7 +76,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @keyframes accent-current { 0%,100% { transform: scaleX(.45); opacity: .5; } 50% { transform: scaleX(1); opacity: 1; } }
 .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 9px; background: #5aff8c; box-shadow: 0 0 18px #5aff8c; will-change: opacity; animation: status-breathe 4.5s ease-in-out infinite; }
 @keyframes status-breathe { 0%,100% { opacity: .62; } 50% { opacity: 1; } }
-.hero h1 { margin: 28px 0 28px; font-size: clamp(58px, 8vw, 124px); line-height: .91; letter-spacing: -.068em; font-weight: 600; color: #f7f8fa; text-shadow: 0 1px 0 rgba(255,255,255,.18), 0 22px 80px rgba(0,0,0,.4); }
+.hero h1 { margin: 28px 0 28px; font-size: clamp(58px, 8vw, 124px); line-height: .95; letter-spacing: -.055em; font-weight: 600; color: #f7f8fa; text-shadow: 0 1px 0 rgba(255,255,255,.18), 0 22px 80px rgba(0,0,0,.4); }
 .hero h1 span { color: transparent; background: linear-gradient(180deg,#b5bac3 5%,#747b86 68%,#a7adb6); -webkit-background-clip: text; background-clip: text; }
 .hero-role { margin: 0 0 18px; color: #f4f5f7; font-size: clamp(20px,2vw,30px); line-height: 1.2; letter-spacing: -.035em; font-weight: 520; }
 .hero-copy { width: min(660px, 100%); color: #b1b6be; font-size: clamp(18px, 1.75vw, 25px); line-height: 1.5; letter-spacing: -.025em; }
