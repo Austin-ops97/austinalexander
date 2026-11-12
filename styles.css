@@ -159,6 +159,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .products { border-top: 1px solid var(--line); }
 .product-intro { display: grid; grid-template-columns: .5fr 1.4fr 1fr; gap: 50px; align-items: end; }
 .product-intro > p:last-child { color: var(--muted); font-size: 17px; line-height: 1.65; }
+.portfolio-security-card { width: calc(100% - clamp(48px,12vw,192px)); max-width: 1248px; margin: 0 auto clamp(56px,8vw,108px); padding: clamp(22px,3vw,38px); display: grid; grid-template-columns: minmax(150px,.42fr) 1fr; align-items: center; gap: clamp(22px,4vw,56px); border: 1px solid var(--line); border-left: 2px solid rgba(104,167,255,.55); background: linear-gradient(110deg,rgba(104,167,255,.07),rgba(255,255,255,.015)); box-shadow: inset 0 1px 0 rgba(255,255,255,.035); }
+.portfolio-security-label { color: #b6c1d0; font: 600 10px/1.5 monospace; letter-spacing: .14em; text-transform: uppercase; }
+.portfolio-security-card h3 { margin: 0 0 8px; font-size: clamp(19px,2vw,25px); letter-spacing: -.035em; font-weight: 520; }
+.portfolio-security-card p { margin: 0; max-width: 850px; color: var(--muted); font-size: 14px; line-height: 1.7; }
 .product-story { --tilt-x: 0deg; --tilt-y: 0deg; --lift: 0px; min-height: min(1000px,100svh); padding: clamp(80px,8vw,130px) clamp(24px,6vw,100px); display: grid; grid-template-columns: minmax(320px,.62fr) minmax(0,1.38fr); gap: 6vw; align-items: center; position: relative; overflow: hidden; isolation: isolate; border-top: 1px solid rgba(255,255,255,.08); perspective: 1600px; transform-style: preserve-3d; content-visibility: auto; contain-intrinsic-size: 1000px; contain: paint layout style; }
 .product-story::before { content: ""; position: absolute; inset: 0; z-index: -2; background-size: 108% 108%; }
 .product-story { --mx: 70%; --my: 50%; }
@@ -259,6 +263,7 @@ footer p { margin: 0; line-height: 1.6; }
   .intro { grid-template-columns: 1fr; }
   .principles { grid-column: 1; }
   .section-heading, .product-intro { grid-template-columns: 1fr; }
+  .portfolio-security-card { grid-template-columns: 1fr; gap: 12px; }
   .product-story { grid-template-columns: 1fr; min-height: auto; gap: 70px; }
   .product-copy { max-width: 680px; }
   .project-visual { width: 100%; }
