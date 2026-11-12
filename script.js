@@ -57,7 +57,10 @@ let lastScrollY = window.scrollY;
 let dockTimer;
 let wheelFrame = 0;
 let wheelTarget = window.scrollY;
+let wheelPosition = window.scrollY;
+let wheelVelocity = 0;
 let wheelFrameTime = 0;
+let wheelGestureDeadline = 0;
 
 if (!reducedMotion && precisePointer && cursorRing) {
   const interactiveSelector = 'a,button,input,textarea,select,label,summary,[role="button"],[tabindex]';
@@ -98,7 +101,7 @@ const getParallaxOffsets = () => {
     const rect = visual.getBoundingClientRect();
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
     const visualCenter = rect.top + rect.height / 2;
-    const offset = Math.round(clamp((viewportCenter - visualCenter) * 0.035, -22, 22));
+    const offset = clamp((viewportCenter - visualCenter) * 0.035, -22, 22);
     offsets.push([visual, offset]);
   });
 
@@ -149,17 +152,38 @@ const scheduleSceneUpdate = () => {
 const onScroll = () => scheduleSceneUpdate();
 
 if (!reducedMotion && precisePointer) {
-  const animateWheelScroll = (time) => {
-    const elapsed = wheelFrameTime ? Math.min(time - wheelFrameTime, 34) : 16.7;
-    wheelFrameTime = time;
-    const current = window.scrollY;
-    const distance = wheelTarget - current;
-    const next = Math.abs(distance) < 0.6
-      ? wheelTarget
-      : current + distance * (1 - Math.exp(-elapsed / 105));
+  const stopWheelScroll = () => {
+    if (wheelFrame) window.cancelAnimationFrame(wheelFrame);
+    wheelFrame = 0;
+    wheelFrameTime = 0;
+    wheelVelocity = 0;
+    wheelPosition = window.scrollY;
+    wheelTarget = window.scrollY;
+  };
 
-    window.scrollTo({ top: next, behavior: 'instant' });
-    if (next === wheelTarget) {
+  const animateWheelScroll = (time) => {
+    const elapsed = wheelFrameTime ? Math.min((time - wheelFrameTime) / 1000, .032) : 1 / 120;
+    wheelFrameTime = time;
+
+    const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+    wheelTarget = clamp(wheelTarget, 0, maxScroll);
+    const displacement = wheelTarget - wheelPosition;
+    const acceleration = displacement * 118 - wheelVelocity * 21.7;
+    wheelVelocity += acceleration * elapsed;
+    wheelPosition = clamp(wheelPosition + wheelVelocity * elapsed, 0, maxScroll);
+
+    if ((wheelPosition === 0 && wheelVelocity < 0) || (wheelPosition === maxScroll && wheelVelocity > 0)) {
+      wheelVelocity = 0;
+    }
+
+    const settled = Math.abs(wheelTarget - wheelPosition) < .25 && Math.abs(wheelVelocity) < 2;
+    if (settled) {
+      wheelPosition = wheelTarget;
+      wheelVelocity = 0;
+    }
+
+    window.scrollTo({ top: wheelPosition, behavior: 'instant' });
+    if (settled) {
       wheelFrame = 0;
       wheelFrameTime = 0;
       return;
@@ -171,26 +195,32 @@ if (!reducedMotion && precisePointer) {
   window.addEventListener('wheel', (event) => {
     if (event.ctrlKey || event.shiftKey || event.deltaX !== 0 || event.deltaY === 0) return;
 
-    const isSteppedWheel = event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL
-      || Math.abs(event.deltaY) >= 60;
+    const now = performance.now();
+    const isActiveWheelGesture = now <= wheelGestureDeadline;
+    const isSteppedWheel = isActiveWheelGesture
+      || event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL
+      || Math.abs(event.deltaY) >= 80;
 
     if (!isSteppedWheel) {
-      if (wheelFrame) {
-        window.cancelAnimationFrame(wheelFrame);
-        wheelFrame = 0;
-        wheelFrameTime = 0;
-      }
+      if (wheelFrame) stopWheelScroll();
       return;
     }
 
     event.preventDefault();
+    wheelGestureDeadline = now + 150;
     const lineScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
       ? 40
       : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
         ? window.innerHeight
         : 1;
-    if (!wheelFrame) wheelTarget = window.scrollY;
-    wheelTarget = clamp(wheelTarget + event.deltaY * lineScale, 0, document.documentElement.scrollHeight - window.innerHeight);
+    const inputDelta = clamp(event.deltaY * lineScale, -240, 240);
+    if (!wheelFrame) {
+      wheelPosition = window.scrollY;
+      wheelTarget = window.scrollY;
+      wheelVelocity = 0;
+      wheelFrameTime = 0;
+    }
+    wheelTarget = clamp(wheelTarget + inputDelta, 0, document.documentElement.scrollHeight - window.innerHeight);
     if (!wheelFrame) wheelFrame = window.requestAnimationFrame(animateWheelScroll);
   }, { passive: false });
 }

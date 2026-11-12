@@ -183,7 +183,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .product-copy li { position: relative; padding: 12px 0 12px 18px; border-bottom: 1px solid var(--line); color: #b6bbc2; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
 .product-copy li::before { content: ""; position: absolute; left: 1px; top: 17px; width: 5px; height: 5px; border: 1px solid rgba(153,194,255,.65); transform: rotate(45deg); box-shadow: 0 0 8px rgba(104,167,255,.28); }
 .project-visual { min-width: 0; position: relative; display: grid; place-items: center; perspective: 1500px; }
-.project-visual.reveal.visible { translate: 0 calc(var(--parallax,0px) + var(--lift)); transform: none; transition: translate .22s ease-out; }
+.project-visual.reveal.visible { translate: 0 calc(var(--parallax,0px) + var(--lift)); transform: none; will-change: translate; }
 .product-story.is-tilting .project-visual.reveal.visible { transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)); backface-visibility: hidden; will-change: transform; }
 .project-visual::after { content: ""; position: absolute; z-index: -1; left: 10%; right: 10%; bottom: -7%; height: 18%; background: rgba(0,0,0,.78); filter: blur(34px); transform: translateZ(-60px) rotateX(70deg); opacity: .72; pointer-events: none; }
 .screenshot-panel { position: relative; width: 100%; margin: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; background: #080a0d; box-shadow: 0 42px 110px rgba(0,0,0,.58), 0 0 0 1px rgba(0,0,0,.5); isolation: isolate; transition: border-color .4s, box-shadow .4s; }
