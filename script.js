@@ -20,7 +20,6 @@ const roles = document.querySelectorAll('.role');
 const reveals = document.querySelectorAll('.reveal');
 const parallaxVisuals = document.querySelectorAll('.project-visual');
 const productStories = document.querySelectorAll('.product-story');
-const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
 const portfolioImages = document.querySelectorAll('[data-portfolio-image]');
 const portfolioTransitions = new WeakMap();
@@ -596,7 +595,6 @@ const chapterObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0, rootMargin: '-38% 0px -56%' });
 
 chapterSections.forEach((section) => chapterObserver.observe(section));
-printTriggers.forEach((trigger) => trigger.addEventListener('click', () => window.print()));
 window.addEventListener('scroll', onScroll, { passive: true });
 window.addEventListener('resize', () => {
   refreshSceneMetrics();
