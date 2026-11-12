@@ -62,14 +62,8 @@ const createMotionChannel = (initialValues, apply, onSettle, response = 72) => {
   };
 };
 let ticking = false;
-let lastScrollY = window.scrollY;
-let dockTimer;
-let wheelFrame = 0;
-let wheelTarget = window.scrollY;
-let wheelPosition = window.scrollY;
-let wheelVelocity = 0;
-let wheelFrameTime = 0;
-let wheelGestureDeadline = 0;
+let timelineMetrics = null;
+const parallaxMetrics = new WeakMap();
 
 if (!reducedMotion && precisePointer && cursorRing) {
   const interactiveSelector = 'a,button,input,textarea,select,label,summary,[role="button"],[tabindex]';
@@ -101,15 +95,35 @@ if (!reducedMotion && precisePointer && cursorRing) {
   window.addEventListener('blur', () => cursorRing.classList.add('is-hidden'));
 }
 
-const getParallaxOffsets = () => {
+const refreshSceneMetrics = () => {
+  if (timeline) {
+    const rect = timeline.getBoundingClientRect();
+    timelineMetrics = {
+      top: rect.top + window.scrollY,
+      height: rect.height
+    };
+  }
+
+  parallaxVisuals.forEach((visual) => {
+    const rect = visual.getBoundingClientRect();
+    parallaxMetrics.set(visual, {
+      center: rect.top + window.scrollY + rect.height / 2,
+      height: rect.height
+    });
+  });
+};
+
+const getParallaxOffsets = (scrollY) => {
   if (reducedMotion || window.innerWidth <= 700) return [];
   const viewportCenter = window.innerHeight / 2;
   const offsets = [];
 
   parallaxVisuals.forEach((visual) => {
-    const rect = visual.getBoundingClientRect();
-    if (rect.bottom < 0 || rect.top > window.innerHeight) return;
-    const visualCenter = rect.top + rect.height / 2;
+    const metrics = parallaxMetrics.get(visual);
+    if (!metrics) return;
+    const viewportTop = metrics.center - metrics.height / 2 - scrollY;
+    if (viewportTop + metrics.height < 0 || viewportTop > window.innerHeight) return;
+    const visualCenter = metrics.center - scrollY;
     const offset = clamp((viewportCenter - visualCenter) * 0.035, -22, 22);
     offsets.push([visual, offset]);
   });
@@ -117,38 +131,20 @@ const getParallaxOffsets = () => {
   return offsets;
 };
 
-const getTimelineProgress = () => {
-  if (!timeline) return null;
-  const rect = timeline.getBoundingClientRect();
+const getTimelineProgress = (scrollY) => {
+  if (!timeline || !timelineMetrics) return null;
   const start = window.innerHeight * 0.68;
-  const distance = Math.max(rect.height - window.innerHeight * 0.2, 1);
-  return clamp((start - rect.top) / distance, 0, 1);
-};
-
-const settleMobileDock = (scrollY) => {
-  if (!mobileDock || window.innerWidth > 700) return;
-  if (document.body.classList.contains('connect-sheet-open')) {
-    mobileDock.classList.remove('hidden');
-    lastScrollY = scrollY;
-    return;
-  }
-  const movingDown = scrollY > lastScrollY;
-  const moved = Math.abs(scrollY - lastScrollY) > 5;
-
-  if (movingDown && moved && scrollY > 140) mobileDock.classList.add('hidden');
-  window.clearTimeout(dockTimer);
-  dockTimer = window.setTimeout(() => mobileDock.classList.remove('hidden'), 220);
-  lastScrollY = scrollY;
+  const distance = Math.max(timelineMetrics.height - window.innerHeight * 0.2, 1);
+  return clamp((start - (timelineMetrics.top - scrollY)) / distance, 0, 1);
 };
 
 const updateScene = () => {
   const scrollY = window.scrollY;
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
   const progress = scrollable > 0 ? scrollY / scrollable : 0;
-  const timelineProgress = getTimelineProgress();
-  const parallaxOffsets = getParallaxOffsets();
+  const timelineProgress = getTimelineProgress(scrollY);
+  const parallaxOffsets = getParallaxOffsets(scrollY);
 
-  settleMobileDock(scrollY);
   header?.classList.toggle('scrolled', scrollY > 20);
   if (progressBar) progressBar.style.transform = `scaleX(${clamp(progress, 0, 1)})`;
   if (timelineProgress !== null) timeline.style.setProperty('--timeline-progress', timelineProgress.toFixed(4));
@@ -164,81 +160,6 @@ const scheduleSceneUpdate = () => {
 };
 
 const onScroll = () => scheduleSceneUpdate();
-
-if (!reducedMotion && precisePointer) {
-  const stopWheelScroll = () => {
-    if (wheelFrame) window.cancelAnimationFrame(wheelFrame);
-    wheelFrame = 0;
-    wheelFrameTime = 0;
-    wheelVelocity = 0;
-    wheelPosition = window.scrollY;
-    wheelTarget = window.scrollY;
-  };
-
-  const animateWheelScroll = (time) => {
-    const elapsed = wheelFrameTime ? Math.min((time - wheelFrameTime) / 1000, .032) : 1 / 120;
-    wheelFrameTime = time;
-
-    const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-    wheelTarget = clamp(wheelTarget, 0, maxScroll);
-    const displacement = wheelTarget - wheelPosition;
-    const acceleration = displacement * 118 - wheelVelocity * 21.7;
-    wheelVelocity += acceleration * elapsed;
-    wheelPosition = clamp(wheelPosition + wheelVelocity * elapsed, 0, maxScroll);
-
-    if ((wheelPosition === 0 && wheelVelocity < 0) || (wheelPosition === maxScroll && wheelVelocity > 0)) {
-      wheelVelocity = 0;
-    }
-
-    const settled = Math.abs(wheelTarget - wheelPosition) < .25 && Math.abs(wheelVelocity) < 2;
-    if (settled) {
-      wheelPosition = wheelTarget;
-      wheelVelocity = 0;
-    }
-
-    window.scrollTo({ top: wheelPosition, behavior: 'instant' });
-    if (settled) {
-      wheelFrame = 0;
-      wheelFrameTime = 0;
-      return;
-    }
-
-    wheelFrame = window.requestAnimationFrame(animateWheelScroll);
-  };
-
-  window.addEventListener('wheel', (event) => {
-    if (event.ctrlKey || event.shiftKey || event.deltaX !== 0 || event.deltaY === 0) return;
-
-    const now = performance.now();
-    const isActiveWheelGesture = now <= wheelGestureDeadline;
-    const isSteppedWheel = isActiveWheelGesture
-      || event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL
-      || Math.abs(event.deltaY) >= 80;
-
-    if (!isSteppedWheel) {
-      if (wheelFrame) stopWheelScroll();
-      return;
-    }
-
-    event.preventDefault();
-    wheelGestureDeadline = now + 150;
-    const lineScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
-      ? 40
-      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-        ? window.innerHeight
-        : 1;
-    const inputDelta = clamp(event.deltaY * lineScale, -240, 240);
-    if (!wheelFrame) {
-      wheelPosition = window.scrollY;
-      wheelTarget = window.scrollY;
-      wheelVelocity = 0;
-      wheelFrameTime = performance.now();
-    }
-    wheelTarget = clamp(wheelTarget + inputDelta, 0, document.documentElement.scrollHeight - window.innerHeight);
-    wheelVelocity = clamp(wheelVelocity + inputDelta * 5.6, -2200, 2200);
-    if (!wheelFrame) wheelFrame = window.requestAnimationFrame(animateWheelScroll);
-  }, { passive: false });
-}
 
 let connectSheetTimer = 0;
 let connectSheetReturnFocus = null;
@@ -575,9 +496,16 @@ const chapterObserver = new IntersectionObserver((entries) => {
 chapterSections.forEach((section) => chapterObserver.observe(section));
 printTriggers.forEach((trigger) => trigger.addEventListener('click', () => window.print()));
 window.addEventListener('scroll', onScroll, { passive: true });
-window.addEventListener('resize', scheduleSceneUpdate, { passive: true });
+window.addEventListener('resize', () => {
+  refreshSceneMetrics();
+  scheduleSceneUpdate();
+}, { passive: true });
+window.addEventListener('load', () => {
+  refreshSceneMetrics();
+  scheduleSceneUpdate();
+}, { once: true });
 
-onScroll();
+refreshSceneMetrics();
 updateScene();
 
 const year = document.getElementById('year');
