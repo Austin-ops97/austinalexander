@@ -12,7 +12,7 @@ const productStories = document.querySelectorAll('.product-story');
 const printTriggers = document.querySelectorAll('[data-print]');
 const navLinks = document.querySelectorAll('[data-nav]');
 const portfolioImages = document.querySelectorAll('[data-portfolio-image]');
-const portfolioTransitionTimers = new WeakMap();
+const portfolioTransitions = new WeakMap();
 const chapterSections = document.querySelectorAll('#intro, #work, #products, #capabilities, #contact');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const precisePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -194,45 +194,106 @@ if (!reducedMotion && precisePointer) {
   }, { passive: false });
 }
 
+const updatePortfolioPressedState = (visual, activeImage) => {
+  visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {
+    portfolioImage.setAttribute('aria-pressed', String(portfolioImage.dataset.portfolioImage === activeImage));
+  });
+};
+
+const completePortfolioTransition = (visual, activeImage, animations, frame) => {
+  if (frame) window.cancelAnimationFrame(frame);
+  visual.dataset.activeImage = activeImage;
+  visual.removeAttribute('data-transitioning');
+  visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {
+    portfolioImage.style.removeProperty('z-index');
+  });
+  animations.forEach((animation) => animation.cancel());
+  updatePortfolioPressedState(visual, activeImage);
+};
+
+const animatePortfolioImageFront = (visual, imageMode) => {
+  const outgoingMode = visual.dataset.activeImage;
+  const incoming = visual.querySelector(`[data-portfolio-image="${imageMode}"]`);
+  const outgoing = visual.querySelector(`[data-portfolio-image="${outgoingMode}"]`);
+  if (!incoming || !outgoing || incoming === outgoing) return;
+
+  const direction = imageMode === 'dark' ? 1 : -1;
+  const duration = 920;
+  const easing = 'cubic-bezier(.2,.72,.16,1)';
+
+  visual.dataset.transitioning = 'true';
+  updatePortfolioPressedState(visual, imageMode);
+  incoming.style.zIndex = '1';
+  outgoing.style.zIndex = '4';
+
+  const incomingAnimation = incoming.animate([
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 0 },
+    { transform: `translate3d(${direction * 14}px,8px,-72px) scale(.955) rotateY(${direction * -4}deg)`, offset: .2 },
+    { transform: `translate3d(${direction * 78}px,-8px,-118px) scale(.91) rotateY(${direction * -8}deg)`, offset: .43 },
+    { transform: `translate3d(${direction * 104}px,-18px,-38px) scale(.96) rotateY(${direction * -4}deg)`, offset: .58 },
+    { transform: `translate3d(${direction * 44}px,-10px,24px) scale(1.018) rotateY(${direction * 1.4}deg)`, offset: .76 },
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 1 }
+  ], { duration, easing, fill: 'both' });
+
+  const outgoingAnimation = outgoing.animate([
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 0 },
+    { transform: `translate3d(${direction * -10}px,-5px,18px) scale(1.008) rotateY(${direction * 1.5}deg)`, offset: .2 },
+    { transform: `translate3d(${direction * -22}px,8px,-68px) scale(.95) rotateY(${direction * 4}deg)`, offset: .5 },
+    { transform: `translate3d(${direction * -8}px,5px,-34px) scale(.975) rotateY(${direction * 2}deg)`, offset: .72 },
+    { transform: 'translate3d(0,0,0) scale(1) rotateY(0deg)', offset: 1 }
+  ], { duration, easing, fill: 'both' });
+
+  const animations = [incomingAnimation, outgoingAnimation];
+  const transition = { target: imageMode, animations, frame: 0, queuedTarget: null, planeSwapped: false };
+  portfolioTransitions.set(visual, transition);
+
+  const followAnimation = () => {
+    const currentTransition = portfolioTransitions.get(visual);
+    if (currentTransition !== transition) return;
+
+    const timelineProgress = Math.max(0, Math.min(1, (incomingAnimation.currentTime || 0) / duration));
+    const visualProgress = incomingAnimation.effect?.getComputedTiming().progress ?? timelineProgress;
+    if (!transition.planeSwapped && visualProgress >= .59) {
+      transition.planeSwapped = true;
+      incoming.style.zIndex = '5';
+      outgoing.style.zIndex = '1';
+    }
+
+    if (timelineProgress < 1) {
+      transition.frame = window.requestAnimationFrame(followAnimation);
+      return;
+    }
+
+    const queuedTarget = transition.queuedTarget;
+    completePortfolioTransition(visual, imageMode, animations, transition.frame);
+    portfolioTransitions.delete(visual);
+    if (queuedTarget && queuedTarget !== imageMode) animatePortfolioImageFront(visual, queuedTarget);
+  };
+
+  transition.frame = window.requestAnimationFrame(followAnimation);
+};
+
 const setPortfolioImageFront = (image) => {
   const visual = image.closest('.dual-landscape');
   if (!visual) return;
 
   const imageMode = image.dataset.portfolioImage;
-  const currentTarget = visual.dataset.transitionTarget;
-  if (currentTarget === imageMode) return;
-
-  const transitionTimer = portfolioTransitionTimers.get(visual);
-  if (transitionTimer) window.clearTimeout(transitionTimer);
-
-  const currentImage = visual.dataset.activeImage;
-  if (currentImage === imageMode || reducedMotion) {
-    visual.dataset.activeImage = imageMode;
-    visual.removeAttribute('data-transition-phase');
-    visual.removeAttribute('data-transition-from');
-    visual.removeAttribute('data-transition-target');
-    portfolioTransitionTimers.delete(visual);
-  } else {
-    visual.dataset.transitionFrom = currentImage;
-    visual.dataset.transitionTarget = imageMode;
-    visual.dataset.transitionPhase = 'recede';
-    const transitionTimer = window.setTimeout(() => {
-      visual.dataset.activeImage = imageMode;
-      visual.dataset.transitionPhase = 'approach';
-      const finishTimer = window.setTimeout(() => {
-        visual.removeAttribute('data-transition-phase');
-        visual.removeAttribute('data-transition-from');
-        visual.removeAttribute('data-transition-target');
-        portfolioTransitionTimers.delete(visual);
-      }, 460);
-      portfolioTransitionTimers.set(visual, finishTimer);
-    }, 220);
-    portfolioTransitionTimers.set(visual, transitionTimer);
+  const currentTransition = portfolioTransitions.get(visual);
+  if (currentTransition) {
+    if (currentTransition.target !== imageMode) currentTransition.queuedTarget = imageMode;
+    return;
   }
 
-  visual.querySelectorAll('[data-portfolio-image]').forEach((portfolioImage) => {
-    portfolioImage.setAttribute('aria-pressed', String(portfolioImage === image));
-  });
+  if (visual.dataset.activeImage === imageMode) return;
+
+  if (reducedMotion || window.matchMedia('(max-width: 700px)').matches) {
+    visual.dataset.activeImage = imageMode;
+    updatePortfolioPressedState(visual, imageMode);
+    return;
+  }
+
+  updatePortfolioPressedState(visual, imageMode);
+  animatePortfolioImageFront(visual, imageMode);
 };
 
 portfolioImages.forEach((image) => {
